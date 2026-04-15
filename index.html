@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Earn Coins Pro</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+</head>
+
+<body style="background:black;color:white;text-align:center">
+
+<h1>🔥 Earn Coins Website</h1>
+
+<button onclick="login()">Login with Google</button>
+
+<h2 id="user"></h2>
+
+<hr>
+
+<button onclick="addCoins()">Get 5 Coins</button>
+<h2>Coins: <span id="coins">0</span></h2>
+
+<hr>
+
+<h2>🎁 Redeem</h2>
+<button onclick="redeem()">Redeem 100 Coins</button>
+
+<hr>
+
+<h2>🎟️ Promo Code</h2>
+<input id="promo" placeholder="Enter Code">
+<button onclick="usePromo()">Apply</button>
+
+<p id="msg"></p>
+
+<script>
+// 🔑 Firebase config (yahan apna daalna)
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+let db = firebase.firestore();
+let userId;
+
+// 🔐 LOGIN
+function login(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).then((res)=>{
+    userId = res.user.uid;
+    document.getElementById("user").innerText = res.user.email;
+
+    loadCoins();
+  });
+}
+
+// 💰 LOAD COINS
+function loadCoins(){
+  db.collection("users").doc(userId).get().then(doc=>{
+    if(doc.exists){
+      document.getElementById("coins").innerText = doc.data().coins;
+    } else {
+      db.collection("users").doc(userId).set({coins:0});
+    }
+  });
+}
+
+// ➕ ADD COINS
+function addCoins(){
+  db.collection("users").doc(userId).update({
+    coins: firebase.firestore.FieldValue.increment(5)
+  });
+  loadCoins();
+}
+
+// 🎁 REDEEM
+function redeem(){
+  let coinText = document.getElementById("coins").innerText;
+
+  if(coinText >= 100){
+    db.collection("users").doc(userId).update({
+      coins: coinText - 100
+    });
+
+    document.getElementById("msg").innerText = "Redeem request sent!";
+  } else {
+    document.getElementById("msg").innerText = "Not enough coins!";
+  }
+}
+
+// 🎟️ PROMO CODE
+function usePromo(){
+  let code = document.getElementById("promo").value;
+
+  if(code == "FREE50"){
+    db.collection("users").doc(userId).update({
+      coins: firebase.firestore.FieldValue.increment(50)
+    });
+    document.getElementById("msg").innerText = "Promo applied!";
+  } else {
+    document.getElementById("msg").innerText = "Invalid code!";
+  }
+
+  loadCoins();
+}
+</script>
+
+</body>
+</html>
